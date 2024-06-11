@@ -11,16 +11,21 @@ iframe.addEventListener('load', function () {
     iframeBody.style = "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
     if (comments.length) {
         comments?.forEach((val, index) => {
-            const node = iframeDoc.createElement("p");
-            const textnode = document.createTextNode(index + 1);
-            node.appendChild(textnode);
-            node.classList.add('commentNode')
-            node.id = index
-            node.style = `position: absolute;width: 40px; height: 40px;top: ${val?.yCoordinate}px;left: ${val?.xCoordinate}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
-            node.addEventListener('click', nodeClick)
-            iframeDoc.body.appendChild(node);
-            manageDraggableEvent(iframeDoc)
+            let newlyCreatedNode =craeteNewCommentNode(index + 1, index, val?.xCoordinate, val?.yCoordinate)
+            let newlyCreatedComment = createNewCommentContainer(val?.comment, index, parseInt(val?.xCoordinate) + 50, parseInt(val?.yCoordinate))
+
+            addHoverEvent(newlyCreatedNode, newlyCreatedComment)
+            // const node = iframeDoc.createElement("p");
+            // const textnode = document.createTextNode(index + 1);
+            // node.appendChild(textnode);
+            // node.classList.add('commentNode')
+            // node.id = index
+            // node.style = `position: absolute;width: 40px; height: 40px;top: ${val?.yCoordinate}px;left: ${val?.xCoordinate}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
+            // node.addEventListener('click', nodeClick)
+            // iframeDoc.body.appendChild(node);
+            // manageDraggableEvent(iframeDoc)
         })
+
     }
     iframeDoc.addEventListener('click', function (event) {
         if (pendingComment) {
@@ -41,7 +46,7 @@ iframe.addEventListener('load', function () {
             "Coordinate y: " + y);
         var scrollLeft = iframe.contentWindow.scrollX || iframe.contentDocument.documentElement.scrollLeft;
         var scrollTop = iframe.contentWindow.scrollY || iframe.contentDocument.documentElement.scrollTop;
-        addCommentButton(iframeDoc, comments.length + 1, x, scrollTop + y)
+        createNewComment(iframeDoc, comments.length + 1, x, scrollTop + y)
     });
     iframeDoc.addEventListener("mouseup", (event) => {
         let draggableElemnts = iframeDoc.querySelectorAll(".commentNode")
@@ -50,7 +55,7 @@ iframe.addEventListener('load', function () {
         })
     });
 
-    function addCommentButton(iframeDoc, number, x, y) {
+    function createNewComment(iframeDoc, number, x, y) {
         // CREATING COMMENT INPUT ELEMENT
         const inputElem = iframeDoc.createElement("input");
         inputElem.type = "text";
@@ -69,19 +74,45 @@ iframe.addEventListener('load', function () {
         iframeDoc.body.appendChild(submitComment);
 
         // CREATING COMMENT POINTER
-        const node = iframeDoc.createElement("p");
-        const textnode = document.createTextNode(number);
-        node.appendChild(textnode);
-        node.classList.add('commentNode')
-        node.id = comments.length
-        node.style = `position: absolute;width: 40px; height: 40px;top: ${y - 20}px;left: ${x - 20}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
-        node.addEventListener('click', nodeClick)
-        iframeDoc.body.appendChild(node);
-        manageDraggableEvent(iframeDoc)
+        craeteNewCommentNode(number, comments.length, x - 20, y - 20)
+        // const node = iframeDoc.createElement("p");
+        // const textnode = document.createTextNode(number);
+        // node.appendChild(textnode);
+        // node.classList.add('commentNode')
+        // node.id = comments.length
+        // node.style = `position: absolute;width: 40px; height: 40px;top: ${y - 20}px;left: ${x - 20}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
+        // node.addEventListener('click', nodeClick)
+        // iframeDoc.body.appendChild(node);
+        // manageDraggableEvent(iframeDoc)
 
         xCoordinate = x - 20
         yCoordinate = y - 20
         pendingComment = true
+    }
+
+    function craeteNewCommentNode(commentNumber, commentId, xAxis, yAxis) {
+        const node = iframeDoc.createElement("p");
+        const textnode = document.createTextNode(commentNumber);
+        node.appendChild(textnode);
+        node.classList.add('commentNode')
+        node.id = commentId
+        node.style = `position: absolute;width: 40px; height: 40px;top: ${yAxis}px;left: ${xAxis}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
+        node.addEventListener('click', nodeClick)
+        iframeDoc.body.appendChild(node);
+        manageDraggableEvent(iframeDoc)
+
+        return node
+    }
+
+    function createNewCommentContainer(comment, id, xAxis, yAxis) {
+        const commentContainer = iframeDoc.createElement("div");
+        const textnode = document.createTextNode(comment);
+        commentContainer.appendChild(textnode);
+        commentContainer.classList.add('commentContainer')
+        commentContainer.id = id
+        commentContainer.style = `display: none; padding: 5px 10px;position: absolute; top: ${yAxis}px;left: ${xAxis}px;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF; background-color: red;`
+        iframeDoc.body.appendChild(commentContainer);
+        return commentContainer
     }
 
     function manageDraggableEvent(iframeDoc) {
@@ -157,25 +188,41 @@ iframe.addEventListener('load', function () {
         comments.push(newComment)
 
         // CREATING COMMENT CONTAINER
-        const commentContainer = iframeDoc.createElement("div");
-        const textnode = document.createTextNode(comment);
-        commentContainer.appendChild(textnode);
-        commentContainer.classList.add('commentContainer')
-        commentContainer.id = comments.length - 1
-        commentContainer.style = `display: none; padding: 5px 10px;position: absolute; top: ${yCoordinate}px;left: ${xCoordinate + 50}px;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF; background-color: red;`
-        iframeDoc.body.appendChild(commentContainer);
-        const allCommentContainer = iframeDoc.body.querySelectorAll('.commentContainer')
+        let newlyComment = createNewCommentContainer(comment, comments.length - 1, xCoordinate + 50, yCoordinate)
+        // const commentContainer = iframeDoc.createElement("div");
+        // const textnode = document.createTextNode(comment);
+        // commentContainer.appendChild(textnode);
+        // commentContainer.classList.add('commentContainer')
+        // commentContainer.id = comments.length - 1
+        // commentContainer.style = `display: none; padding: 5px 10px;position: absolute; top: ${yCoordinate}px;left: ${xCoordinate + 50}px;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF; background-color: red;`
+        // iframeDoc.body.appendChild(commentContainer);
 
-        commentNodes[comments.length - 1].addEventListener('mouseover', (event) => {
-            allCommentContainer[event.target.id].style.display = 'flex'
-        })
+        console.log(commentNodes[commentNodes.length -1])
+        console.log(newlyComment)
 
-        commentNodes[comments.length - 1].addEventListener('mouseout', (event) => {
-            allCommentContainer[event.target.id].style.display = 'none'
-        })
+        let newlyCreatedNode = commentNodes[commentNodes.length -1] 
+        let newlyCreatedComment = newlyComment
+        addHoverEvent(newlyCreatedNode, newlyCreatedComment)
+        // commentNodes[comments.length - 1].addEventListener('mouseover', (event) => {
+        //     allCommentContainer[event.target.id].style.display = 'flex'
+        // })
+
+        // commentNodes[comments.length - 1].addEventListener('mouseout', (event) => {
+        //     allCommentContainer[event.target.id].style.display = 'none'
+        // })
 
 
         localStorage.setItem("comments", JSON.stringify(comments));
+    }
+
+    function addHoverEvent(commentNode, commentContainer) {
+        commentNode.addEventListener('mouseover', (event) => {
+            commentContainer.style.display = 'flex'
+        })
+
+        commentNode.addEventListener('mouseout', (event) => {
+            commentContainer.style.display = 'none'
+        })
     }
 });
 
