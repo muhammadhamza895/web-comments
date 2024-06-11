@@ -4,6 +4,8 @@ var iframe = document.getElementById('myIframe');
 var commentSection = document.getElementsByClassName('commentsSections')[0]
 let pendingComment = false;
 let xCoordinate, yCoordinate;
+let debounceTimer;
+let dragElem, dragElemId;
 
 iframe.addEventListener('load', function () {
     var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -43,10 +45,13 @@ iframe.addEventListener('load', function () {
         createNewComment(iframeDoc, comments.length + 1, x, scrollTop + y)
     });
     iframeDoc.addEventListener("mouseup", (event) => {
-        let draggableElemnts = iframeDoc.querySelectorAll(".commentNode")
-        draggableElemnts.forEach((val, index) => {
-            val.removeEventListener("mousemove", onMouseDrag);
-        })
+        const commentContainer = iframeDoc.body.querySelectorAll('.commentContainer')
+        commentContainer[dragElemId].style.visibility = 'initial'
+        iframeDoc.removeEventListener("mousemove", onMouseDrag);
+        // let draggableElemnts = iframeDoc.querySelectorAll(".commentNode")
+        // draggableElemnts.forEach((val, index) => {
+        //     val.removeEventListener("mousemove", onMouseDrag);
+        // })
     });
 
     function createNewComment(iframeDoc, number, x, y) {
@@ -162,11 +167,11 @@ iframe.addEventListener('load', function () {
     }
 
     function addHoverEvent(commentNode, commentContainer) {
-        commentNode.addEventListener('mouseover', (event) => {
+        commentNode.addEventListener('mouseover', () => {
             commentContainer.style.opacity = '1'
         })
 
-        commentNode.addEventListener('mouseout', (event) => {
+        commentNode.addEventListener('mouseout', () => {
             commentContainer.style.opacity = '0'
         })
     }
@@ -176,34 +181,38 @@ iframe.addEventListener('load', function () {
     }
 
     function onMouseDownHandler(event) {
-        event.target.addEventListener("mousemove", onMouseDrag);
+        dragElem = event.target
+        dragElemId = event.target.id
+        // dragElem.removeEventListener('mouseover')
+        iframeDoc.addEventListener("mousemove", onMouseDrag);
     }
 
     function onMouseDrag(event) {
         event.stopPropagation()
         const commentContainer = iframeDoc.body.querySelectorAll('.commentContainer')
-        commentContainer[event.target.id].style.opacity = '0'
+        commentContainer[dragElemId].style.opacity = '0'
+        commentContainer[dragElemId].style.visibility = 'hidden'
 
         // UPDATING NODE POSITION ON DRAG
-        let draggingElem = event.target
+        let draggingElem = dragElem
         let getContainerStyle = window.getComputedStyle(draggingElem);
         let leftValue = parseInt(getContainerStyle.left);
         let topValue = parseInt(getContainerStyle.top);
         draggingElem.style.left = leftValue + event.movementX <= 0 ? 0 : `${leftValue + event.movementX}px`;
-        draggingElem.style.top = topValue + event.movementY <= 0 ? 0 :  `${topValue + event.movementY}px`;
+        draggingElem.style.top = topValue + event.movementY <= 0 ? 0 : `${topValue + event.movementY}px`;
 
         // UPDATING COMMENT POSITION OF DRAGGED NODE
-        let condition1 = parseInt(draggingElem.style.left) + 40 + commentContainer[event.target.id].clientWidth >= windowWidth - 40
+        let condition1 = parseInt(draggingElem.style.left) + 50 + commentContainer[dragElemId].clientWidth >= windowWidth - 40
         if (condition1) {
-            commentContainer[event.target.id].style.left = `${leftValue + event.movementX - commentContainer[event.target.id].clientWidth - 10}px`
+            commentContainer[dragElemId].style.left = `${parseInt(draggingElem.style.left) - commentContainer[dragElemId].clientWidth - 10}px`
         } else {
-            commentContainer[event.target.id].style.left = `${leftValue + event.movementX + 50}px`;
+            commentContainer[dragElemId].style.left = `${parseInt(draggingElem.style.left) + 50}px`
         }
-        commentContainer[event.target.id].style.top = `${topValue + event.movementY}px`;
+        commentContainer[dragElemId].style.top = draggingElem.style.top;
 
         // UPDATING IN LOCAL ARRAY
-        comments[draggingElem.id].xCoordinate = `${leftValue + event.movementX}`
-        comments[draggingElem.id].yCoordinate = `${topValue + event.movementY}`
+        comments[draggingElem.id].xCoordinate = leftValue + event.movementX + 50
+        comments[draggingElem.id].yCoordinate = topValue + event.movementY
 
         // UPDATING IN LOCAL STORAGE FOR REFRESH 
         const data = JSON.parse(localStorage.getItem("comments"))
@@ -211,6 +220,9 @@ iframe.addEventListener('load', function () {
         data[draggingElem.id].yCoordinate = `${topValue + event.movementY}`
         localStorage.setItem("comments", JSON.stringify(data))
     }
+
 });
+
+
 
 
