@@ -11,10 +11,11 @@ iframe.addEventListener('load', function () {
     iframeBody.style = "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
     if (comments.length) {
         comments?.forEach((val, index) => {
-            let newlyCreatedNode =craeteNewCommentNode(index + 1, index, val?.xCoordinate, val?.yCoordinate)
+            let newlyCreatedNode = craeteNewCommentNode(index + 1, index, val?.xCoordinate, val?.yCoordinate)
             let newlyCreatedComment = createNewCommentContainer(val?.comment, index, parseInt(val?.xCoordinate) + 50, parseInt(val?.yCoordinate))
 
             addHoverEvent(newlyCreatedNode, newlyCreatedComment)
+            addDragEvent(newlyCreatedNode)
             // const node = iframeDoc.createElement("p");
             // const textnode = document.createTextNode(index + 1);
             // node.appendChild(textnode);
@@ -23,7 +24,7 @@ iframe.addEventListener('load', function () {
             // node.style = `position: absolute;width: 40px; height: 40px;top: ${val?.yCoordinate}px;left: ${val?.xCoordinate}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
             // node.addEventListener('click', nodeClick)
             // iframeDoc.body.appendChild(node);
-            // manageDraggableEvent(iframeDoc)
+            // addDragEvent(iframeDoc)
         })
 
     }
@@ -74,7 +75,8 @@ iframe.addEventListener('load', function () {
         iframeDoc.body.appendChild(submitComment);
 
         // CREATING COMMENT POINTER
-        craeteNewCommentNode(number, comments.length, x - 20, y - 20)
+        let newlyCreatedNode = craeteNewCommentNode(number, comments.length, x - 20, y - 20)
+        addDragEvent(newlyCreatedNode)
         // const node = iframeDoc.createElement("p");
         // const textnode = document.createTextNode(number);
         // node.appendChild(textnode);
@@ -83,7 +85,7 @@ iframe.addEventListener('load', function () {
         // node.style = `position: absolute;width: 40px; height: 40px;top: ${y - 20}px;left: ${x - 20}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
         // node.addEventListener('click', nodeClick)
         // iframeDoc.body.appendChild(node);
-        // manageDraggableEvent(iframeDoc)
+        // addDragEvent(iframeDoc)
 
         xCoordinate = x - 20
         yCoordinate = y - 20
@@ -99,7 +101,7 @@ iframe.addEventListener('load', function () {
         node.style = `position: absolute;width: 40px; height: 40px;top: ${yAxis}px;left: ${xAxis}px;display: flex;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF;border-radius: 50%;cursor: pointer;`
         node.addEventListener('click', nodeClick)
         iframeDoc.body.appendChild(node);
-        manageDraggableEvent(iframeDoc)
+        // addDragEvent(iframeDoc)
 
         return node
     }
@@ -115,18 +117,20 @@ iframe.addEventListener('load', function () {
         return commentContainer
     }
 
-    function manageDraggableEvent(iframeDoc) {
-        let draggableElemnts = iframeDoc.querySelectorAll(".commentNode")
+    function addDragEvent(newlyCreatedNode) {
+        // let draggableElemnts = iframeDoc.querySelectorAll(".commentNode")
 
         // REMOVING PREVIOS EVENTS
-        draggableElemnts.forEach((val, index) => {
-            val.removeEventListener('mousedown', onMouseDownHandler)
-        })
+        // draggableElemnts.forEach((val, index) => {
+        //     val.removeEventListener('mousedown', onMouseDownHandler)
+        // })
 
         // ADDING NEW EVENTS
-        draggableElemnts.forEach((val, index) => {
-            val.addEventListener('mousedown', onMouseDownHandler)
-        })
+        // draggableElemnts.forEach((val, index) => {
+        //     val.addEventListener('mousedown', onMouseDownHandler)
+        // })
+        console.log(newlyCreatedNode)
+        newlyCreatedNode.addEventListener('mousedown', onMouseDownHandler)
     }
 
     function onMouseDownHandler(event) {
@@ -197,10 +201,7 @@ iframe.addEventListener('load', function () {
         // commentContainer.style = `display: none; padding: 5px 10px;position: absolute; top: ${yCoordinate}px;left: ${xCoordinate + 50}px;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF; background-color: red;`
         // iframeDoc.body.appendChild(commentContainer);
 
-        console.log(commentNodes[commentNodes.length -1])
-        console.log(newlyComment)
-
-        let newlyCreatedNode = commentNodes[commentNodes.length -1] 
+        let newlyCreatedNode = commentNodes[commentNodes.length - 1]
         let newlyCreatedComment = newlyComment
         addHoverEvent(newlyCreatedNode, newlyCreatedComment)
         // commentNodes[comments.length - 1].addEventListener('mouseover', (event) => {
