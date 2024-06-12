@@ -6,6 +6,7 @@ let pendingComment = false;
 let xCoordinate, yCoordinate;
 let dragElem, dragElemId;
 
+
 iframe.addEventListener('load', function () {
     var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
     let iframeBody = iframeDoc.querySelector("body")
@@ -205,7 +206,7 @@ iframe.addEventListener('load', function () {
         comments[draggingElem.id].xCoordinate = leftValue + event.movementX + 50
         comments[draggingElem.id].yCoordinate = topValue + event.movementY
 
-        // UPDATING IN LOCAL STORAGE FOR REFRESH 
+        // UPDATING IN LOCAL STORAGE FOR REFRESH
         const data = JSON.parse(localStorage.getItem("comments"))
         data[draggingElem.id].xCoordinate = `${leftValue + event.movementX}`
         data[draggingElem.id].yCoordinate = `${topValue + event.movementY}`
