@@ -4,7 +4,6 @@ var iframe = document.getElementById('myIframe');
 var commentSection = document.getElementsByClassName('commentsSections')[0]
 let pendingComment = false;
 let xCoordinate, yCoordinate;
-let debounceTimer;
 let dragElem, dragElemId;
 
 iframe.addEventListener('load', function () {
@@ -40,7 +39,6 @@ iframe.addEventListener('load', function () {
         yCoordinate = y - 20
         console.log("Coordinate x: " + x,
             "Coordinate y: " + y);
-        var scrollLeft = iframe.contentWindow.scrollX || iframe.contentDocument.documentElement.scrollLeft;
         var scrollTop = iframe.contentWindow.scrollY || iframe.contentDocument.documentElement.scrollTop;
         createNewComment(iframeDoc, comments.length + 1, x, scrollTop + y)
     });
@@ -48,10 +46,6 @@ iframe.addEventListener('load', function () {
         const commentContainer = iframeDoc.body.querySelectorAll('.commentContainer')
         commentContainer[dragElemId].style.visibility = 'initial'
         iframeDoc.removeEventListener("mousemove", onMouseDrag);
-        // let draggableElemnts = iframeDoc.querySelectorAll(".commentNode")
-        // draggableElemnts.forEach((val, index) => {
-        //     val.removeEventListener("mousemove", onMouseDrag);
-        // })
     });
 
     function createNewComment(iframeDoc, number, x, y) {
@@ -59,7 +53,6 @@ iframe.addEventListener('load', function () {
         let newlyCreatedNode = craeteNewCommentNode(number, comments.length, x - 20, y - 20, windowWidth)
         let newNodeXPosition = parseInt(newlyCreatedNode.style.left)
         let newNodeYPosition = parseInt(newlyCreatedNode.style.top)
-        // console.log(parseInt(newlyCreatedNode.style.top))
 
         // CREATING COMMENT INPUT ELEMENT
         let inputELemWidth = 250
@@ -122,8 +115,7 @@ iframe.addEventListener('load', function () {
         let newlyCreatedNode = commentNodes[commentNodes.length - 1]
         let newNodeXPostion = parseInt(newlyCreatedNode.style.left)
         let newlyComment = createNewCommentContainer(comment, comments.length - 1, newNodeXPostion + 50, yCoordinate, windowWidth)
-        let newlyCreatedComment = newlyComment
-        addHoverEvent(newlyCreatedNode, newlyCreatedComment)
+        addHoverEvent(newlyCreatedNode, newlyComment)
         localStorage.setItem("comments", JSON.stringify(comments));
     }
 
@@ -183,7 +175,6 @@ iframe.addEventListener('load', function () {
     function onMouseDownHandler(event) {
         dragElem = event.target
         dragElemId = event.target.id
-        // dragElem.removeEventListener('mouseover')
         iframeDoc.addEventListener("mousemove", onMouseDrag);
     }
 
