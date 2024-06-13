@@ -88,10 +88,14 @@ function setupIframe() {
         // CREATING SUBMIT COMMENT BUTTON
         const submitComment = document.createElement("button");
         submitComment.innerText = "Submit"
+        submitComment.type = 'submit'
         submitComment.id = 'subitCommentButton'
         submitComment.style = `position: absolute;width: 70px; top: ${newNodeYPosition + inputELemHeight + 20}px;left: ${newNodeXPosition + 40 + 10}px; z-index: 1000; color: black; border-radius: 8px;`
         submitComment.addEventListener("click", saveComment)
 
+        // WRAPPING INPUT AND BUTTON INSIDE FORM
+        const inputForm = document.createElement("form");
+        inputForm.setAttribute("wized", "comment_form")
 
         let positionCondition = parseInt(inputElem.style.left) + parseInt(inputElem.style.width) + 10
         if (positionCondition >= windowWidth) {
@@ -102,8 +106,9 @@ function setupIframe() {
 
         }
 
-        document.body.appendChild(inputElem);
-        document.body.appendChild(submitComment);
+        inputForm.appendChild(inputElem);
+        inputForm.appendChild(submitComment);
+        document.body.appendChild(inputForm)
 
         addDragEvent(newlyCreatedNode)
 
@@ -113,6 +118,7 @@ function setupIframe() {
     }
 
     function saveComment(event) {
+        event.preventDefault()
         event.stopPropagation()
         const comment = document.body.querySelector('#inputCommentId').value
         let commentNodes = document.querySelectorAll('.commentNode')
