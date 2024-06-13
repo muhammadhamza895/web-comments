@@ -1,15 +1,23 @@
-const comments = JSON.parse(localStorage.getItem("comments")) || []
+// PARENT DATA
+let parentSource, message;
 
-var iframe = document.getElementById('myIframe');
-var commentSection = document.getElementsByClassName('commentsSections')[0]
-let pendingComment = false;
-let xCoordinate, yCoordinate;
-let dragElem, dragElemId;
+window.addEventListener('message', async function (event) {
+    console.log('Received message (iframe):', event.data);
+    message = await JSON.parse(event.data)
+    parentSource = event.source
+    setupIframe()
+}, false);
 
+function setupIframe() {
+    const comments = message
 
-iframe.addEventListener('load', function () {
-    var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    let iframeBody = iframeDoc.querySelector("body")
+    var iframe = document.getElementById('myIframe');
+    var commentSection = document.getElementsByClassName('commentsSections')[0]
+    let pendingComment = false;
+    let xCoordinate, yCoordinate;
+    let dragElem, dragElemId;
+
+    let iframeBody = document.querySelector("body")
     iframeBody.style = "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; overflow-x: hidden;"
 
     var windowWidth = window.innerWidth;
@@ -23,13 +31,13 @@ iframe.addEventListener('load', function () {
         })
 
     }
-    iframeDoc.addEventListener('click', function (event) {
+    document.addEventListener('click', function (event) {
         if (pendingComment) {
-            let commentNodes = iframeDoc.querySelectorAll('.commentNode')
+            let commentNodes = document.querySelectorAll('.commentNode')
             if (commentNodes.length) {
                 commentNodes[comments.length].remove()
-                iframeDoc.body.querySelector('#inputCommentId').remove()
-                iframeDoc.body.querySelector('#subitCommentButton').remove()
+                document.body.querySelector('#inputCommentId').remove()
+                document.body.querySelector('#subitCommentButton').remove()
                 pendingComment = false;
                 return
             }
@@ -40,16 +48,21 @@ iframe.addEventListener('load', function () {
         yCoordinate = y - 20
         console.log("Coordinate x: " + x,
             "Coordinate y: " + y);
-        var scrollTop = iframe.contentWindow.scrollY || iframe.contentDocument.documentElement.scrollTop;
-        createNewComment(iframeDoc, comments.length + 1, x, scrollTop + y)
+        var scrollTop = window.scrollY;
+        createNewComment(comments.length + 1, x, scrollTop + y)
     });
-    iframeDoc.addEventListener("mouseup", (event) => {
-        const commentContainer = iframeDoc.body.querySelectorAll('.commentContainer')
-        commentContainer[dragElemId].style.visibility = 'initial'
-        iframeDoc.removeEventListener("mousemove", onMouseDrag);
+    document.addEventListener("mouseup", (event) => {
+        const commentContainer = document.body.querySelectorAll('.commentContainer')
+        if (commentContainer.length && dragElemId) {
+            commentContainer[dragElemId].style.visibility = 'initial'
+        }
+        if (comments.length) {
+            uploadComment(localStorage.getItem("comments"))
+        }
+        document.removeEventListener("mousemove", onMouseDrag);
     });
 
-    function createNewComment(iframeDoc, number, x, y) {
+    function createNewComment(number, x, y) {
         // CREATING COMMENT POINTER
         let newlyCreatedNode = craeteNewCommentNode(number, comments.length, x - 20, y - 20, windowWidth)
         let newNodeXPosition = parseInt(newlyCreatedNode.style.left)
@@ -59,7 +72,7 @@ iframe.addEventListener('load', function () {
         let inputELemWidth = 250
         let inputELemHeight = 35
 
-        const inputElem = iframeDoc.createElement("input");
+        const inputElem = document.createElement("input");
         inputElem.type = "text";
         inputElem.classList.add('inputComment')
         inputElem.id = 'inputCommentId'
@@ -67,7 +80,7 @@ iframe.addEventListener('load', function () {
         inputElem.addEventListener('click', nodeClick)
 
         // CREATING SUBMIT COMMENT BUTTON
-        const submitComment = iframeDoc.createElement("button");
+        const submitComment = document.createElement("button");
         submitComment.innerText = "Submit"
         submitComment.id = 'subitCommentButton'
         submitComment.style = `position: absolute;width: 70px; top: ${newNodeYPosition + inputELemHeight + 20}px;left: ${newNodeXPosition + 40 + 10}px; z-index: 1000; color: black;`
@@ -83,8 +96,8 @@ iframe.addEventListener('load', function () {
 
         }
 
-        iframeDoc.body.appendChild(inputElem);
-        iframeDoc.body.appendChild(submitComment);
+        document.body.appendChild(inputElem);
+        document.body.appendChild(submitComment);
 
         addDragEvent(newlyCreatedNode)
 
@@ -95,17 +108,17 @@ iframe.addEventListener('load', function () {
 
     function saveComment(event) {
         event.stopPropagation()
-        const comment = iframeDoc.body.querySelector('#inputCommentId').value
-        let commentNodes = iframeDoc.querySelectorAll('.commentNode')
+        const comment = document.body.querySelector('#inputCommentId').value
+        let commentNodes = document.querySelectorAll('.commentNode')
         if (!comment) {
             commentNodes[comments.length].remove()
-            iframeDoc.body.querySelector('#inputCommentId').remove()
-            iframeDoc.body.querySelector('#subitCommentButton').remove()
+            document.body.querySelector('#inputCommentId').remove()
+            document.body.querySelector('#subitCommentButton').remove()
             pendingComment = false;
             return
         }
-        iframeDoc.body.querySelector('#inputCommentId').remove()
-        iframeDoc.body.querySelector('#subitCommentButton').remove()
+        document.body.querySelector('#inputCommentId').remove()
+        document.body.querySelector('#subitCommentButton').remove()
         pendingComment = false
         const newComment = {
             xCoordinate,
@@ -117,14 +130,18 @@ iframe.addEventListener('load', function () {
         let newNodeXPostion = parseInt(newlyCreatedNode.style.left)
         let newlyComment = createNewCommentContainer(comment, comments.length - 1, newNodeXPostion + 50, yCoordinate, windowWidth)
         addHoverEvent(newlyCreatedNode, newlyComment)
+        uploadComment(JSON.stringify(comments))
         localStorage.setItem("comments", JSON.stringify(comments));
     }
 
+    function uploadComment(uploadindData) {
+        parentSource.postMessage(uploadindData, '*')
+    }
 
     // DOM ELEMENT CREATOR FUNCTIONS
     function craeteNewCommentNode(commentNumber, commentId, xAxis, yAxis, browserWidth) {
         let nodeWidth = 40
-        const node = iframeDoc.createElement("p");
+        const node = document.createElement("p");
         const textnode = document.createTextNode(commentNumber);
         node.appendChild(textnode);
         node.classList.add('commentNode')
@@ -135,18 +152,18 @@ iframe.addEventListener('load', function () {
             let updatedXAxisPosition = xAxis - (nodeWidth / 2)
             node.style.left = updatedXAxisPosition + 'px'
         }
-        iframeDoc.body.appendChild(node);
+        document.body.appendChild(node);
         return node
     }
 
     function createNewCommentContainer(comment, id, xAxis, yAxis, browserWidth) {
-        const commentContainer = iframeDoc.createElement("div");
+        const commentContainer = document.createElement("div");
         const textnode = document.createTextNode(comment);
         commentContainer.appendChild(textnode);
         commentContainer.classList.add('commentContainer')
         commentContainer.id = id
-        commentContainer.style = `opacity: 0; padding: 5px 10px;position: absolute; top: ${yAxis}px;left: ${xAxis}px;align-items: center;justify-content: center;z-index: 1000;background-color: #83B4FF; background-color: red;`
-        iframeDoc.body.appendChild(commentContainer);
+        commentContainer.style = `opacity: 0; padding: 5px 10px;position: absolute; top: ${yAxis}px;left: ${xAxis}px;align-items: center;justify-content: center;z-index: 1100;background-color: #83B4FF; background-color: red; pointer-events: none;`
+        document.body.appendChild(commentContainer);
         if (xAxis + commentContainer.offsetWidth + 10 >= browserWidth) {
             let updatedXAxisPosition = parseInt(xAxis - commentContainer.offsetWidth - 50 - 10)
             commentContainer.style.left = updatedXAxisPosition + 'px'
@@ -161,10 +178,12 @@ iframe.addEventListener('load', function () {
 
     function addHoverEvent(commentNode, commentContainer) {
         commentNode.addEventListener('mouseover', () => {
+            commentContainer.style.pointerEvents = 'initial'
             commentContainer.style.opacity = '1'
         })
 
         commentNode.addEventListener('mouseout', () => {
+            commentContainer.style.pointerEvents = 'none'
             commentContainer.style.opacity = '0'
         })
     }
@@ -176,18 +195,20 @@ iframe.addEventListener('load', function () {
     function onMouseDownHandler(event) {
         dragElem = event.target
         dragElemId = event.target.id
-        iframeDoc.addEventListener("mousemove", onMouseDrag);
+        document.addEventListener("mousemove", onMouseDrag);
     }
 
     function onMouseDrag(event) {
+        // console.log(dragElem)
+        // console.log(dragElemId)
         event.stopPropagation()
-        const commentContainer = iframeDoc.body.querySelectorAll('.commentContainer')
+        const commentContainer = document.body.querySelectorAll('.commentContainer')
         commentContainer[dragElemId].style.opacity = '0'
         commentContainer[dragElemId].style.visibility = 'hidden'
 
         // UPDATING NODE POSITION ON DRAG
         let draggingElem = dragElem
-        let getContainerStyle = window.getComputedStyle(draggingElem);
+        let getContainerStyle = window.getComputedStyle(dragElem);
         let leftValue = parseInt(getContainerStyle.left);
         let topValue = parseInt(getContainerStyle.top);
         draggingElem.style.left = leftValue + event.movementX <= 0 ? 0 : `${leftValue + event.movementX}px`;
@@ -203,7 +224,7 @@ iframe.addEventListener('load', function () {
         commentContainer[dragElemId].style.top = draggingElem.style.top;
 
         // UPDATING IN LOCAL ARRAY
-        comments[draggingElem.id].xCoordinate = leftValue + event.movementX + 50
+        comments[draggingElem.id].xCoordinate = leftValue + event.movementX
         comments[draggingElem.id].yCoordinate = topValue + event.movementY
 
         // UPDATING IN LOCAL STORAGE FOR REFRESH
@@ -213,7 +234,9 @@ iframe.addEventListener('load', function () {
         localStorage.setItem("comments", JSON.stringify(data))
     }
 
-});
+}
+
+
 
 
 
