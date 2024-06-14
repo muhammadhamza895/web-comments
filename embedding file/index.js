@@ -3,16 +3,16 @@ let parentSource, message;
 
 window.addEventListener('message', async function (event) {
     console.log('Received message (iframe):', event.data);
-    message = await JSON.parse(event.data)
-    parentSource = event.source
-    setupIframe()
+    if (event.data?.target === 'markup-comments') {
+        message = await JSON.parse(event.data?.data)
+        parentSource = event.source
+        setupIframe()
+    }
 }, false);
 
 function setupIframe() {
     const comments = message
 
-    var iframe = document.getElementById('myIframe');
-    var commentSection = document.getElementsByClassName('commentsSections')[0]
     let pendingComment = false;
     let xCoordinate, yCoordinate;
     let dragElem, dragElemId;
@@ -21,9 +21,11 @@ function setupIframe() {
     iframeBody.style = "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; overflow-x: hidden;"
 
     var windowWidth = window.innerWidth;
+
+    // REDERING PREVIOUS COMMENTS
     if (comments.length) {
         comments?.forEach((val, index) => {
-            let newlyCreatedNode = craeteNewCommentNode(index + 1, index, val?.xCoordinate, val?.yCoordinate, windowWidth)
+            let newlyCreatedNode = createNodeElem(index + 1, index, val?.xCoordinate, val?.yCoordinate, windowWidth)
             let newlyCreatedComment = createNewCommentContainer(val?.comment, index, parseInt(newlyCreatedNode.style.left) + 50, parseInt(val?.yCoordinate), windowWidth)
 
             addHoverEvent(newlyCreatedNode, newlyCreatedComment)
@@ -34,13 +36,17 @@ function setupIframe() {
     else {
         localStorage.removeItem("comments");
     }
+
+    const [inputElem, submitComment] = createInputCommentForm()
+
+    // EVENT : CLICK TO ADD NODE 
     document.addEventListener('click', function (event) {
         if (pendingComment) {
             let commentNodes = document.querySelectorAll('.commentNode')
             if (commentNodes.length) {
                 commentNodes[comments.length].remove()
-                document.body.querySelector('#inputCommentId').remove()
-                document.body.querySelector('#subitCommentButton').remove()
+                inputElem.style.display = 'none'
+                submitComment.style.display = 'none'
                 pendingComment = false;
                 return
             }
@@ -54,6 +60,8 @@ function setupIframe() {
         var scrollTop = window.scrollY;
         createNewComment(comments.length + 1, x, scrollTop + y)
     });
+
+    // EVENT : RELEASE NODE AFTER DRAG
     document.addEventListener("mouseup", (event) => {
         const commentContainer = document.body.querySelectorAll('.commentContainer')
         if (commentContainer[dragElemId]) {
@@ -67,70 +75,20 @@ function setupIframe() {
         document.removeEventListener("mousemove", onMouseDrag);
     });
 
-    function createNewComment(number, x, y) {
-        // CREATING COMMENT POINTER
-        let newlyCreatedNode = craeteNewCommentNode(number, comments.length, x - 20, y - 20, windowWidth)
-        let newNodeXPosition = parseInt(newlyCreatedNode.style.left)
-        let newNodeYPosition = parseInt(newlyCreatedNode.style.top)
-
-        // CREATING COMMENT INPUT ELEMENT
-        let inputELemWidth = 250
-        let inputELemHeight = 35
-
-        const inputElem = document.createElement("input");
-        inputElem.type = "text";
-        inputElem.classList.add('inputComment')
-        inputElem.id = 'inputCommentId'
-        inputElem.style = `
-        position: absolute;width: ${inputELemWidth}px;height : ${inputELemHeight}px; top: ${newNodeYPosition + 10}px;left: ${newNodeXPosition + 40 + 10}px; z-index: 1000; color: black; border-radius: 8px; border: solid 2px #0E46A3; outline: none !important;`
-        inputElem.addEventListener('click', nodeClick)
-
-        // CREATING SUBMIT COMMENT BUTTON
-        const submitComment = document.createElement("button");
-        submitComment.innerText = "Submit"
-        submitComment.type = 'submit'
-        submitComment.id = 'subitCommentButton'
-        submitComment.style = `position: absolute;width: 70px; top: ${newNodeYPosition + inputELemHeight + 20}px;left: ${newNodeXPosition + 40 + 10}px; z-index: 1000; color: black; border-radius: 8px;`
-        submitComment.addEventListener("click", saveComment)
-
-        // WRAPPING INPUT AND BUTTON INSIDE FORM
-        const inputForm = document.createElement("form");
-        inputForm.setAttribute("wized", "comment_form")
-
-        let positionCondition = parseInt(inputElem.style.left) + parseInt(inputElem.style.width) + 10
-        if (positionCondition >= windowWidth) {
-            let updatedInputElemPosition = parseInt(inputElem.style.left) - inputELemWidth - 50 - 10
-            let updatedSubmitBtnPosition = parseInt(submitComment.style.left) - parseInt(submitComment.style.width) - 50 - 10
-            inputElem.style.left = updatedInputElemPosition + 'px'
-            submitComment.style.left = updatedSubmitBtnPosition + 'px'
-
-        }
-
-        inputForm.appendChild(inputElem);
-        inputForm.appendChild(submitComment);
-        document.body.appendChild(inputForm)
-
-        addDragEvent(newlyCreatedNode)
-
-        xCoordinate = x - 20
-        yCoordinate = y - 20
-        pendingComment = true
-    }
-
+    // SAVE COMMENT CREDENTIALS LOCALLY
     function saveComment(event) {
         event.preventDefault()
         event.stopPropagation()
-        const comment = document.body.querySelector('#inputCommentId').value
+        const comment = inputElem.value
         let commentNodes = document.querySelectorAll('.commentNode')
         if (!comment) {
             commentNodes[comments.length].remove()
-            document.body.querySelector('#inputCommentId').remove()
-            document.body.querySelector('#subitCommentButton').remove()
             pendingComment = false;
             return
         }
-        document.body.querySelector('#inputCommentId').remove()
-        document.body.querySelector('#subitCommentButton').remove()
+        inputElem.style.display = 'none'
+        inputElem.value = ''
+        submitComment.style.display = 'none'
         pendingComment = false
         const newComment = {
             xCoordinate,
@@ -147,8 +105,9 @@ function setupIframe() {
         localStorage.setItem("comments", JSON.stringify(comments));
     }
 
+    // UPLOAD COMMENT CREDENTAILS 
     function uploadComment(uploadindData) {
-        console.log('sending',{
+        console.log('sending', {
             target: 'markup-comments',
             data: uploadindData
         })
@@ -161,8 +120,10 @@ function setupIframe() {
     }
 
 
-    // DOM ELEMENT CREATOR FUNCTIONS
-    function craeteNewCommentNode(commentNumber, commentId, xAxis, yAxis, browserWidth) {
+    // DOM ELEMENT CREATOR FUNCTIONS ::
+
+    // COMMENT NODE ELEM
+    function createNodeElem(commentNumber, commentId, xAxis, yAxis, browserWidth) {
         let nodeWidth = 40
         const node = document.createElement("p");
         const textnode = document.createTextNode(commentNumber);
@@ -179,6 +140,7 @@ function setupIframe() {
         return node
     }
 
+    // COMMENT ELEM
     function createNewCommentContainer(comment, id, xAxis, yAxis, browserWidth) {
         const commentContainer = document.createElement("div");
         const textnode = document.createTextNode(comment);
@@ -192,6 +154,80 @@ function setupIframe() {
             commentContainer.style.left = updatedXAxisPosition + 'px'
         }
         return commentContainer
+    }
+
+    // CREATE COMMENT NODE
+    function createNewComment(number, x, y) {
+        let newlyCreatedNode = createNodeElem(number, comments.length, x - 20, y - 20, windowWidth)
+        let newNodeXPosition = parseInt(newlyCreatedNode.style.left)
+        let newNodeYPosition = parseInt(newlyCreatedNode.style.top)
+        updateInputCommentFormPosition(newNodeXPosition, newNodeYPosition)
+
+        // EVENT : DRAG NODE
+        addDragEvent(newlyCreatedNode)
+
+        xCoordinate = x - 20
+        yCoordinate = y - 20
+        pendingComment = true
+    }
+
+    // CREATE FORM ELEMENT
+    function createInputCommentForm() {
+
+        // CREATING COMMENT INPUT ELEMENT
+        let inputELemWidth = 250
+        let inputELemHeight = 35
+
+        const inputElem = document.createElement("input");
+        inputElem.type = "text";
+        inputElem.classList.add('inputComment')
+        inputElem.id = 'inputCommentId'
+        inputElem.setAttribute("wized", "comment_input")
+        inputElem.style = `
+            position: absolute;width: ${inputELemWidth}px;height : ${inputELemHeight}px; top: 0px;left: 0px; z-index: 1100; color: black; border-radius: 8px; border: solid 2px #0E46A3; outline: none !important;display: none`
+        inputElem.addEventListener('click', nodeClick)
+
+        // CREATING SUBMIT COMMENT BUTTON
+        const submitComment = document.createElement("button");
+        submitComment.innerText = "Submit"
+        submitComment.type = 'submit'
+        submitComment.id = 'subitCommentButton'
+        submitComment.setAttribute("wized", "comment_submit_btn")
+        submitComment.style = `position: absolute;width: 70px; top: 0px;left: 0px; z-index: 1100; color: black; border-radius: 8px;display: none;`
+        submitComment.addEventListener("click", saveComment)
+
+        // WRAPPING INPUT AND BUTTON INSIDE FORM
+        const inputForm = document.createElement("form");
+        inputForm.setAttribute("wized", "comment_form")
+
+        inputForm.appendChild(inputElem);
+        inputForm.appendChild(submitComment);
+        document.body.appendChild(inputForm)
+
+        return inputForm
+    }
+
+    // UPDATE FORM POSITION ON NEW NODE
+    function updateInputCommentFormPosition(xAxis, yAxis) {
+        let inputELemWidth = 250
+        let inputELemHeight = 35
+
+        inputElem.style.top = `${yAxis + 10}px`
+        inputElem.style.left = `${xAxis + 40 + 10}px`
+
+        submitComment.style.top = `${yAxis + inputELemHeight + 20}px`
+        submitComment.style.left = `${xAxis + 40 + 10}px`
+
+        let positionCondition = parseInt(inputElem.style.left) + parseInt(inputElem.style.width) + 10
+        if (positionCondition >= windowWidth) {
+            let updatedInputElemPosition = parseInt(inputElem.style.left) - inputELemWidth - 50 - 10
+            let updatedSubmitBtnPosition = parseInt(submitComment.style.left) - parseInt(submitComment.style.width) - 50 - 10
+            inputElem.style.left = updatedInputElemPosition + 'px'
+            submitComment.style.left = updatedSubmitBtnPosition + 'px'
+        }
+
+        inputElem.style.display = 'initial'
+        submitComment.style.display = 'initial'
     }
 
     // EVENTS FUNCTIONS
@@ -222,8 +258,6 @@ function setupIframe() {
     }
 
     function onMouseDrag(event) {
-        // console.log(dragElem)
-        // console.log(dragElemId)
         event.stopPropagation()
         const commentContainer = document.body.querySelectorAll('.commentContainer')
         if (commentContainer[dragElemId]) {
